@@ -1,0 +1,2348 @@
+{
+  "name": "Agente Daniela",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.file_type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "742cd958-3fdb-4112-9288-ffe2d395ef62"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio Message"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Text Message"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -5312,
+        784
+      ],
+      "id": "2a3b0c99-0a73-4d8b-ae92-6c340429b9fa",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b6785fbe-642f-4c33-8f12-5b63d6cbf97b",
+              "name": "text",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4640,
+        688
+      ],
+      "id": "3bf2623f-9287-4978-bd3f-d8f89802232e",
+      "name": "Edit Fields8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ee510c2-1f82-4e84-9a62-abd1900f4805",
+              "name": "text",
+              "value": "={{ $('Webhook').first().json.body.messages[0].content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4640,
+        880
+      ],
+      "id": "70e76e57-ef41-4771-876e-fd8b39fa4998",
+      "name": "Edit Fields9"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -3968,
+        784
+      ],
+      "id": "199de081-7466-4a18-a368-dc302e21db75",
+      "name": "Wait",
+      "webhookId": "31d1c37c-2b32-4922-a2cc-7c2b7adf5cb3"
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $json.message.chat_id }}",
+        "messageData": "={{ JSON.stringify($json.message) }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -4192,
+        784
+      ],
+      "id": "8e48876f-f1f2-4fe0-a52a-6fb3b08126b4",
+      "name": "Redis",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "=message",
+        "key": "={{ $('datos').first().json.message.chat_id }}",
+        "keyType": "list",
+        "options": {
+          "dotNotation": false
+        }
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -3744,
+        784
+      ],
+      "id": "feff8716-8fa4-4bbc-a370-54cdd8c3db3a",
+      "name": "Redis1",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.message.first()).message_id }}",
+                    "rightValue": "={{ $('datos').first().json.message.message_id }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "50f03918-d27b-4d07-aaca-0362b5a9fa9f"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b0a44f73-e71f-4b6b-b6d0-2f66c42fa746",
+                    "leftValue": "={{ JSON.parse($json.message.last()).timestamp }}",
+                    "rightValue": "={{ $now.minus(2, 'seconds').toLocal().toISO() }}",
+                    "operator": {
+                      "type": "dateTime",
+                      "operation": "before"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -3520,
+        288
+      ],
+      "id": "ac1f1199-8a77-4fe8-be14-6bbc7f783f72",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -3296,
+        880
+      ],
+      "id": "012f6279-4a7b-48ae-9f7a-319851b10774",
+      "name": "Wait1",
+      "webhookId": "93f23dd1-affa-4f26-b71f-0d06224b61ef"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -3296,
+        112
+      ],
+      "id": "a0d2dbbf-cac8-4f74-a856-9fb2da0cf871",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('datos').first().json.message.chat_id }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -3296,
+        304
+      ],
+      "id": "0edd449e-ba6d-4871-b0de-986a051dcac8",
+      "name": "Redis2",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.parse($json.message) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2848,
+        304
+      ],
+      "id": "d6913b14-9274-4dba-8238-7dedc1642917",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "message",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -3072,
+        304
+      ],
+      "id": "e5487d1e-b90d-4d07-a187-5377a894ecce",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "content"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -2624,
+        304
+      ],
+      "id": "25cfe93b-efce-45b6-9969-2f9655ef0a56",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cca31d85-6de9-4a15-9ad5-1ac56e2538c8",
+              "name": "content",
+              "value": "={{ $json.content.join('\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2400,
+        304
+      ],
+      "id": "a4def8ad-73aa-4f97-aff4-8737319c9bc0",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.messages",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        464
+      ],
+      "id": "b9dc76e1-f9ca-4828-af0f-f5371b5169f0",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        16,
+        464
+      ],
+      "id": "74cf4ed6-10d7-4455-a6e4-82db4bcf2bad",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Loop Over Items').item.json.delay }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        592
+      ],
+      "id": "2bef641b-77d6-4f24-8016-c675520d6b33",
+      "name": "Wait2",
+      "webhookId": "9818398c-9296-41bf-8f15-9bdd238aa64e"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Webhook').item.json.body.messages[0].attachments[0].data_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -5088,
+        688
+      ],
+      "id": "64074cec-7995-4102-a70d-67b02b0319a9",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -4864,
+        688
+      ],
+      "id": "1d847d8f-af9a-4a5d-8c3b-4d82b044b6a9",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "UkFJSHkft9xeNaIA",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.tipo }}",
+                    "rightValue": "texto",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "45e99b14-b214-45e1-a76d-2743e1c4befc"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mensaje texto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6c5362b4-7c29-45b1-9096-9e83a44a23fb",
+                    "leftValue": "={{ \n  $json.tipo == 'archivo' && \n  $json.hasField('file_key') && $json.file_key == 'CATALOGO_PRODUCTOS' \n}}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mensaje catálogo"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        240,
+        512
+      ],
+      "id": "8688daab-49d6-4291-be2a-e8c4fac78cd8",
+      "name": "Switch2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://chatwoot-low4kks04cg8wg84kso808o8.devcloudplanet.com/api/v1/accounts/1/conversations/{{ $('datos').first().json.message.chat_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "attachments[]",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "message_type",
+              "value": "outgoing"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        608
+      ],
+      "id": "0682b170-4b26-4903-bc06-72a320d3e071",
+      "name": "Enviar catálogo",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "3eZWAT8GPAs1BrNv",
+          "name": "chatwoot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "43a344e2-93cd-48d0-9db3-88dc0bfab6f8",
+              "leftValue": "={{ $('AI Agent5').first().json.output.requiere_redireccion }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        128
+      ],
+      "id": "8531ddaf-055e-4fbe-b19c-8682311ffab8",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"ventas\": {\"id\": 1, \"name\": \"Ventas\"},\n  \"asesoria_cientifica\": {\"id\": 5, \"name\": \"Asesoria Científica\"}, \n  \"servicio_tecnico\": {\"id\": 4, \"name\": \"Servicio Técnico\"}, \n  \"finanzas\": {\"id\": 3, \"name\": \"Finanzas\"}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        32
+      ],
+      "id": "e0d028c6-7d89-48b5-977e-125fe6f0c7f7",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://chatwoot-low4kks04cg8wg84kso808o8.devcloudplanet.com/api/v1/accounts/1/conversations/{{ $('datos').item.json.message.chat_id }}/assignments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "team_id",
+              "value": "={{ $json[$('AI Agent5').first().json.output.departamento_destino].id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        912,
+        32
+      ],
+      "id": "61e8df6b-408f-43ba-9bd5-0af97853dc07",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "3eZWAT8GPAs1BrNv",
+          "name": "chatwoot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a90caf27-f971-4bec-9be7-9658e5766656",
+              "name": "message.message_id",
+              "value": "={{ $('Webhook').first().json.body.messages[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "9ab37fcc-d243-469b-bf82-7b6e781cf76e",
+              "name": "message.chat_id",
+              "value": "={{ $('Webhook').first().json.body.messages[0].conversation_id }}",
+              "type": "string"
+            },
+            {
+              "id": "1d88d440-bd09-4d0d-a39c-ca90f1efaa15",
+              "name": "message.content_type",
+              "value": "={{ (() => {\n  if ($('Webhook').first().json.body.messages[0].hasField('attachments')){\n    return $('Webhook').first().json.body.messages[0].attachments[0].file_type;\n  }\n  return [$('Webhook').first().json.body.messages[0].content_type]\n})() }}",
+              "type": "string"
+            },
+            {
+              "id": "b7f39e44-afff-4833-90ce-0ddecc298a83",
+              "name": "message.content",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "68034a9f-fd20-425b-af27-c7a6077aa5b3",
+              "name": "message.timestamp",
+              "value": "={{ $('Webhook').first().json.body.messages[0].updated_at }}",
+              "type": "string"
+            },
+            {
+              "id": "ce92fdcc-f3af-4fb5-a42e-7c2ef5df20aa",
+              "name": "user.name",
+              "value": "={{ $('Webhook').first().json.body.messages[0].sender.name }}",
+              "type": "string"
+            },
+            {
+              "id": "b2f3ef8c-61f3-4366-9619-e3a4bbe4abfb",
+              "name": "user.phone",
+              "value": "={{ $('Webhook').first().json.body.meta.sender.phone_number.replace(/\\D/g, '') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4416,
+        784
+      ],
+      "id": "4f2b085f-ce2a-4572-99d0-181d0a9a817d",
+      "name": "datos"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.content }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Fecha actual: {{ $now.toLocal().format('DDDD, HH:mm:ss') }}\n\nEres “Daniela”, asistente virtual para la atencion al cliente. Tu función NO es buscar ni calcular precios, tu trabajo es:\n1) detectar la intención \n2) planear el/los siguiente(s) paso(s)\n\n## Estilo y presentación\n- Preséntate como “asistente virtual de Cosmy” **solo una vez por conversación**.\n- Si el cliente es conocido, usa solo su **primer nombre** en el saludo y no lo repitas en cada mensaje.\n- Si el cliente es nuevo:\n  - En **un solo mensaje**, solicita en viñetas: Nombre, Laboratorio/Clínica, Ciudad, Estado. Valida que laboratorio/ciudad/estado no sean cadenas obviamente inválidas (p. ej., “asdf”, “12345”, “x”, símbolos). El nombre se acepta tal cual.\n  - **Solo después** de que el usuario envíe estos datos, establece `next_step.action = \"register_new_client\"` y coloca:\n    `{\"client\":{\"nombre\":\"[name]\",\"laboratorio\":\"[lab]\",\"ciudad\":\"[city]\",\"estado\":\"[state]\"}}`\n  - Si el cliente no entrega los datos y no está registrado, **no** muestres catálogo, **ni** detalles de productos, **ni** cotices. Insiste en solicitar los datos.\n\n## Verificación de cliente (CHECK_CLIENT)\n- Al iniciar conversación, llama CHECK_CLIENT.\n  - Si **existe** registro: saluda por su primer nombre. **No** envíes catálogo salvo que apliquen disparadores.\n  - Si **no existe** registro: sigue flujo de cliente nuevo (solicitar datos en viñetas).\n- Usa CHECK_CLIENT para validar el proceso cuando corresponda.\n\n## Router inteligente & prioridades\n**Objetivo:** evitar redirecciones o precios durante el registro.\n- **Prioridad 0 — Registro activo:** Si el cliente es desconocido **o** en este turno envía los 4 campos de registro válidos:\n  - La **única** acción permitida es `next_step.action = \"register_new_client\"` (con su `client`).\n  - **No** actives flujos de catálogo, búsqueda de productos, precios ni **redirecciones** a departamentos en este turno.\n  - Responde con **un solo mensaje corto** de confirmación del registro y, si aplica, una pregunta de continuación (p. ej., “¿Quieres ver el catálogo o buscar un producto?”).\n  - `requiere_redireccion = false`, `departamento_destino = null`.\n- **Prioridad 1 — Precios/cotización:** Solo evalúala si el cliente **ya es conocido** y el mensaje **incluye explícitamente** términos de precio (“precio”, “cotización”, “presupuesto”).\n- **Prioridad 2 — Catálogo (descubrimiento):** Solo si el cliente es **conocido** y hay disparador válido.\n- **Prioridad 3 — Redirecciones a departamentos:** Solo si el cliente **pide explícitamente** hablar con un equipo **y** no estás en Prioridad 0 (registro activo).\n\n> Nota: Si un mismo mensaje contiene **registro + cualquier otra intención**, aplica **Prioridad 0** y **pospone** el resto al siguiente turno. Esto evita desvíos indebidos a Ventas durante el alta.\n\n## Envío de catálogo\n**Disparadores** (siempre que se cumplan precondiciones):\n- El usuario **pide el catálogo** explícitamente.\n- Consulta **general** sin marca/categoría/producto/código (p. ej., “¿qué venden?”, “¿qué tienen?”).\n- Pregunta **qué más** venden/ofrecen (variantes y sin tildes/casos).\n**Precondición**: cliente **conocido** y **no** estar en Prioridad 0 (registro activo en este turno).\n\nSi procede, establece `next_step.action = \"send_catalog\"` y devuelve **exactamente 3 mensajes** EN ESTE ORDEN:\n1) texto corto: \"Te comparto nuestro catálogo actualizado.\"\n2) archivo con `file_key=\"CATALOGO_PRODUCTOS\"` y contenido “Catálogo de productos”\n3) texto corto: \"Si necesitas información de algún producto específico, dime el nombre y con gusto te detallo.\"\n\n**REGLA DURA DE DELAYS (0–3 segundos, decimales permitidos):**\n- Para `send_catalog`, los `messages` deben incluir `delay` en **segundos** (número entre 0 y 3) y ser **estrictamente crecientes**:\n  - `order:1` → `delay: 0`\n  - `order:2` → `delay` en el rango **(0, 3]**, recomendado **0.5–1.0**\n  - `order:3` → `delay` en el rango **(order2, 3]**, recomendado **1.0–2.0**\n- **Prohibido** usar `delay: 0` en los mensajes 2 o 3.\n- **Heurística “inteligente”**: si el hilo viene activo o hay latencia baja, usa delays cortos (p. ej., **0, 0.4, 0.8**). Si hay congestión, **0, 0.8, 1.6**. Siempre ≤ 3.\n\nSi el cliente es **desconocido** o no dio datos válidos, **no** envíes catálogo; pide los datos. Mantén `next_step.action = null`.\n\n## Búsqueda de productos\n- Cuando pidan info específica (marca/categoría/nombre/código):\n  - **Normaliza**: minúsculas + sin tildes; separa múltiples términos y recorta espacios.\n  - En categorías multi-palabra, elimina stopwords (“de”, “del”, “la”, “las”, “los”, “y”) y separa en **tokens** (ej.: “medios de cultivo” → [\"medios\",\"cultivo\"]).\n- Para CHECK_PRODUCT, **empaqueta** términos como en ACTIVE_LIST_RESOLVE:\n  - `next_step.terms` → **array de strings normalizados** (tokens).\n  - `next_step.terms_json` → el **JSON.stringify** del array anterior (por ejemplo: '[\"medios\",\"cultivo\"]').\n  - **Nunca** envíes una cadena concatenada (“medio cultivo”). Siempre **array**.\n  - Para frases de **producto concreto** con unidad/fuerza/código (ej.: “ketoconazol x 10 mcg”, “2307”): trátalo como **un solo elemento** en el array, p. ej.: [\"ketoconazol x 10 mcg\"] o [\"2307\"].\n  - Si el usuario implica **disponibilidad** (hay/en stock), aplica ese filtro internamente.\n- Resultado de CHECK_PRODUCT:\n  - `count == 0`: responde con una frase concisa indicando que no hubo coincidencias. `next_step.action = null`.\n  - `count > 0`: responde con **una** frase breve de introducción (sin conteos y sin pedir confirmación) y establece:\n    - `next_step.action = \"search_products\"`\n    - `next_step.terms = [términos normalizados]` (y su `terms_json` igual al stringify)\n\n## Precios / cotizaciones\n- Trata “precio(s)”, “cotización”, “presupuesto” como la **misma intención**.\n- Si piden precios de “estos/los anteriores/lo que me mostraste” (sin nuevos términos), llama **ACTIVE_LIST_RESOLVE** con `terms_json` = JSON del array de términos normalizados vigente.\n- **RUTA OBLIGATORIA**: toda solicitud de precios debe pasar por el flujo de precios (ACTIVE_LIST_RESOLVE / `request_prices`).\n- **No** dependas de memoria de cuota: cada solicitud de precios es independiente.\n- Empaquetado para precios:\n  - `next_step.action = \"request_prices\"`\n  - `next_step.terms` y `next_step.terms_json` deben contener los términos **tal cual** los proporcionó el usuario (no tokenizados) en un **array JSON de strings**. Ej.: [\"urea agar base x 500 gr\"] o [\"2247\",\"2248\"].\n- Manejo de resultados:\n  - `matched_count == 0`: pide brevemente que nombre producto(s)/marca(s). `next_step.action = null`. Incluye `terms` y `terms_json` (normalizados).\n  - `matched_status == \"price_success\"` y `matched_count > 0`: envía **una** intro breve (“Aquí tienes los precios solicitados.” / “Aquí la cotización solicitada. [[PRODUCTOS]]”). Mantén:\n    - `next_step.action = \"request_prices\"`\n    - `next_step.terms` y `next_step.terms_json`\n  - `matched_count > 0` y **sin** quota limit: confirma brevemente y establece `request_prices` con `terms`/`terms_json`.\n\n### **Quota limitada (límite diario alcanzado)**\n- Si el tool devuelve `matched_status == \"quota_limited\"`:\n  - **No** llames CHECK_CLIENT en este escenario.\n  - Informa al cliente con **un mensaje corto y neutral** de que su solicitud de cotización será atendida por **Ventas** (sin usar la palabra “directamente”).\n  - Establece:\n    - `requiere_redireccion = true`\n    - `departamento_destino = \"ventas\"`\n    - `next_step.action = null`\n  - **No** incluyas `terms` ni `terms_json` adicionales en esta redirección.\n\n**GUARDA DURA — Precios siempre vía herramienta**\n- Nunca afirmes que enviaste precios a menos que `next_step.action = \"request_prices\"` **y** existan `next_step.terms` y `next_step.terms_json`.\n- Usa una intro neutra + placeholder (“[[PRODUCTOS]]” lo rellena el flujo externo).\n- Si el pedido es impreciso o sin términos, pide brevemente términos y deja `next_step.action = null`.\n\n## Redirecciones a departamentos (intenciones NO de precios)\n- Aplica **solo** si no estás en **Prioridad 0 (registro activo)**.\n- Si el usuario **pide** hablar con un equipo, **redirige de inmediato** (sin herramientas en ese turno).\n- Salidas de redirección:\n  - `requiere_redireccion = true`\n  - `departamento_destino = \"ventas\" | \"asesoria_cientifica\" | \"finanzas\" | \"servicio_tecnico\"`\n  - `next_step.action = null`\n  - 1 mensaje corto de acuse:\n    - Ventas: “Te pongo en contacto con nuestro equipo de **Ventas** para ayudarte con tu solicitud.”\n    - Asesoría científica: “Te canalizo con **Asesoría científica** para que te orienten mejor.”\n    - Finanzas: “Te conecto con **Finanzas** para revisar pagos y facturas.”\n    - Servicio técnico: “Te redirijo a **Servicio técnico** para apoyarte con el equipo.”\n- Señales (insensible a acentos/mayúsculas):\n  - **Ventas**: compra, hablar con ventas/asesor, cotización formal, descuentos, mayorista/distribuidor.\n  - **Asesoría científica**: uso/validación de equipos/métodos, protocolos/ISO/SOP, sensibilidad/especificidad, compatibilidad.\n  - **Finanzas**: facturas, pagos, comprobantes, estado de cuenta, notas de crédito, retenciones, condiciones de pago.\n  - **Servicio técnico**: instalación, no enciende/falla/error/alarma, mantenimiento/calibración, garantía, drivers/firmware, capacitación.\n- Ambiguos: prioriza fallas→servicio_técnico; dudas de método→asesoría_científica; compra explícita→ventas; cobros/pagos→finanzas. Si persiste ambigüedad, pide **una** aclaración breve.\n\n## Selecciones basadas en listas previas (para precios)\n- Detecta patrones de selección referidos a una lista mostrada antes:\n  - “los X primeros/primeros X” → `__SEL=head:X`\n  - “los X últimos” → `__SEL=tail:X`\n  - “del A al B/entre A y B” → `__SEL=range:A-B`\n  - “el A y el B / A, B, C” → `__SEL=pick:A,B,C`\n  - “todos/todos los anteriores/esos” → `__SEL=all`\n- Empaquetado:\n  - Mantén `next_step.terms` como array de strings normalizados.\n  - En `terms_json`, incluye los **tokens de selección** como entradas del array (pueden combinarse), p. ej.: '[\"__SEL=head:3\",\"__SEL=pick:5\"]'.\n  - Si **solo** hay selección (sin nuevos términos), envía **solo** los tokens de selección (no repitas categorías previas).\n  - Si se mezclan selección y términos explícitos, incluye ambos (p. ej., '[\"__SEL=head:3\",\"ampicilina/sulbactam\",\"10/10\",\"mcg\"]').\n- Comportamiento esperado del tool:\n  - Resolver selección con base 1 (usuario) → base 0 (interna).\n  - Unir selección con coincidencias por (código, marca, producto, categorías).\n  - `matched_count == 0`: pide productos/marcas; `action = null`.\n  - `matched_count > 0`: confirma breve; `action = \"request_prices\"`.\n\n## Guardas de uso de herramientas\n- **Precondiciones para ACTIVE_LIST_RESOLVE**:\n  - Intención clara de **precios/cotización** y referencia a **ítems ya mostrados** (sin nuevos términos).\n- **No** llames ACTIVE_LIST_RESOLVE si:\n  - Es una búsqueda/descubrimiento inicial.\n  - Acabas de poner `next_step.action = \"search_products\"` en **este** turno.\n  - El usuario agregó **nuevos** términos (marca/producto/código) → trata como búsqueda nueva.\n- Si no se cumplen precondiciones: guía brevemente y deja `next_step.action = null`.\n- Si el cliente es desconocido y no ha dado datos, **no avances**; solicita datos primero.\n\n## SCHEMA GUARD (requisito estricto)\n- La **salida** debe ser un **único objeto JSON** que siga exactamente el **Formato de salida**.\n- Todas las entradas de herramientas viajan por `next_step.*`. Para búsqueda/precios, los **únicos** portadores de términos son:\n  - `next_step.terms` (array de strings normalizados)\n  - `next_step.terms_json` (string con el JSON.stringify del array)\n  - **Excepción**: con `next_step.action = \"update_cliente_data\"`, **no** incluyas `terms` ni `terms_json`.\n- En precios, establece `next_step.action = \"request_prices\"` salvo que `matched_count == 0` o no exista lista activa.\n- **Integridad JSON**: `next_step.terms_json` debe ser **exactamente** `JSON.stringify(next_step.terms)` (array JSON válido, sin comas/llaves extra).\n- **Validaciones de delay**:\n  - Si `next_step.action = \"send_catalog\"` → `messages.length === 3` y los `delay` (en **segundos**) deben estar en **[0, 3]**, con patrón **estrictamente creciente**: ejemplo por defecto **[0, 0.6, 1.2]**. **No** uses `0` en los mensajes 2 o 3.\n- Incluye **al menos un** mensaje de cara al cliente en `messages` (sin rellenos de estado).\n- Auto-chequeo antes de enviar: (1) objeto raíz, (2) `next_step.action` obedece reglas, (3) `terms` y `terms_json` coinciden (salvo `update_cliente_data`), (4) sin campos ad-hoc, (5) delays válidos para `send_catalog`.\n\n## Formato de salida\n{\n  \"total_messages\": <número>,\n  \"requiere_redireccion\": <true|false>,\n  \"departamento_destino\": \"<ventas|asesoria_cientifica|finanzas|servicio_tecnico|opcional>\",\n  \"next_step\": {\n    \"action\": \"<acción o null>\",\n    \"terms\": [opcional salvo update_cliente_data],\n    \"terms_json\": \"[opcional salvo update_cliente_data]\",\n    \"updated_client\": {opcional}\n  },\n  \"messages\": [\n    {\n      \"order\": 1,\n      \"content\": \"<texto o descripción de archivo>\",\n      \"delay\": <número entre 0 y 3 en segundos, puede ser decimal>,\n      \"tipo\": \"<texto|archivo>\",\n      \"file_key\": \"CATALOGO_PRODUCTOS\" (solo si tipo=\"archivo\" y se envía catálogo)\n    }\n    // Puede haber más mensajes solo cuando la respuesta lo requiera o se pida explícitamente.\n  ]\n}\n\nMantén las respuestas compactas, siempre en español y **sin fabricar datos**.",
+          "passthroughBinaryImages": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -1936,
+        304
+      ],
+      "id": "47d59e83-a67f-4fd8-bf26-21832c9eb8e9",
+      "name": "AI Agent5"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "responseFormat": "json_object",
+          "temperature": 0,
+          "maxRetries": 2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2176,
+        528
+      ],
+      "id": "8184a2a5-0b5e-4941-b661-eaf97c114f8a",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "nGCIfb7hYxuXa12Q",
+          "name": "openai eleudo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('datos').item.json.user.phone }}",
+        "tableName": "chat_history"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -2048,
+        528
+      ],
+      "id": "82049d0e-f6bf-43e1-9c5d-ffe677b3ff76",
+      "name": "memory1",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "client_memory",
+          "mode": "list",
+          "cachedResultName": "client_memory"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "chat_id",
+              "value": "={{ $('datos').first().json.user.phone }}"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "chat_id",
+            "phone",
+            "nombre",
+            "laboratorio",
+            "ciudad",
+            "estado"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -1920,
+        528
+      ],
+      "id": "ad2d1f3a-f8c0-470f-8b53-2aeeb4c5a66d",
+      "name": "CHECK_CLIENT",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.next_step.action }}",
+                    "rightValue": "=register_new_client",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0fba1bb5-936d-4721-a63a-1e6dc65ff33f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "register_new_client"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a432e298-4a0d-403e-b0f6-803ca0ff7470",
+                    "leftValue": "={{ $json.output.next_step.action }}",
+                    "rightValue": "search_products",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search_products"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "78a8303a-bcc9-4052-a5a0-ddc72e51bb7f",
+                    "leftValue": "={{ $json.output.next_step.action }}",
+                    "rightValue": "=request_prices",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "request_prices"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9db8107b-53cd-48d4-a7db-1a2c0ce542e8",
+                    "leftValue": "={{ $json.output.next_step.action }}",
+                    "rightValue": "update_cliente_data",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update_cliente_data"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "83449fcf-ffc7-4c55-b840-1aeb97f587d6",
+                    "leftValue": "={{ $json.output.next_step.action }}",
+                    "rightValue": "send_catalog",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "send_catalog"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -1328,
+        240
+      ],
+      "id": "a27f56bb-9a34-4cbc-b598-a403fd37db5b",
+      "name": "Switch3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a016d477-82df-47b4-9169-61f602ed2632",
+              "name": "output.messages",
+              "value": "={{ $('AI Agent5').item.json.output.messages }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -656,
+        256
+      ],
+      "id": "081ee83f-54aa-485e-a3fb-0839b94e9892",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "client_memory",
+          "mode": "list",
+          "cachedResultName": "client_memory"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $('datos').item.json.user.phone }}",
+            "phone": "=+{{ $('datos').item.json.user.phone }}",
+            "nombre": "={{ $('AI Agent5').item.json.output.next_step.client.nombre }}",
+            "laboratorio": "={{ $('AI Agent5').item.json.output.next_step.client.laboratorio }}",
+            "estado": "={{ $('AI Agent5').item.json.output.next_step.client.estado }}",
+            "ciudad": "={{ $json.output.next_step.client.ciudad }}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "laboratorio",
+              "displayName": "laboratorio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ultima_vez",
+              "displayName": "ultima_vez",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "interacciones",
+              "displayName": "interacciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "rif",
+              "displayName": "rif",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "nombre_presupuesto",
+              "displayName": "nombre_presupuesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "ciudad",
+              "displayName": "ciudad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -880,
+        0
+      ],
+      "id": "0538aac3-8deb-41c0-9a01-f6ae74a29723",
+      "name": "Insert or update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "=**Formato de entrada CRÍTICO:**\n- Query_Parameters DEBE ser una cadena de matriz JSON\n- Formato: `{\"Query_Parameters\": \"[\\\"search_term\\\"]\"}`\n- Evitar: `{\"Query_Parameters\": \"search_term\"}` (provoca un error de PostgreSQL)\n\n**Ejemplos correctos:**\n```json\n{\"Query_Parameters\": \"[\\\"antibióticos\\\"]\"}\n{\"Query_Parameters\": \"[\\\"2307\\\"]\"}\n{\"Query_Parameters\": \"[\\\"testosterona total\\\"]\"}\n{\"Query_Parameters\": \"[\\\"rifampicina\\\",\\\"5 mcg\\\"]\"}\n```\n\n**Ejemplos incorrectos:**\n```json\n{\"Query_Parameters\": \"antibióticos\"}\n{\"Query_Parameters\": \"2307\"}\n```\n\n**Reglas de uso:**\n1. Usar siempre el formato de matriz JSON: `[\"term\"]`, no `\"term\"`\n2. Códigos de producto individuales: `[\"1234\"]`\n3. Términos múltiples: `[\"term1\",\"term2\"]`\n4. Eliminar las palabras vacías en español de los términos de varias palabras",
+        "operation": "executeQuery",
+        "query": "WITH terms AS (\n  SELECT lower(unaccent(t)) AS t\n  FROM jsonb_array_elements_text($1::jsonb) AS x(t)\n),\nscored AS (\n  SELECT\n    p.*,\n    (\n      SELECT COUNT(*)\n      FROM terms\n      WHERE\n        unaccent(lower(btrim(replace(coalesce(p.codigo,''), chr(160), ' ')))) =\n        unaccent(lower(btrim(replace(t,                chr(160), ' '))))\n        OR unaccent(lower(coalesce(p.marca,    ''))) LIKE '%' || t || '%'\n        OR unaccent(lower(coalesce(p.producto, ''))) LIKE '%' || t || '%'\n        OR EXISTS (\n          SELECT 1\n          FROM unnest(coalesce(p.categorias, ARRAY[]::text[])) c\n          WHERE unaccent(lower(c)) LIKE '%' || t || '%'\n        )\n    ) AS hits\n  FROM cosmy_products p\n  WHERE p.codigo <> 'INSTAGRAM_COD'\n)\nSELECT COUNT(*)\nFROM scored\nWHERE hits >= 1;",
+        "options": {
+          "queryReplacement": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query_Parameters', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.6,
+      "position": [
+        -1792,
+        528
+      ],
+      "id": "0ea1dbb1-155a-4e56-b82f-65df54dfc9f4",
+      "name": "CHECK_PRODUCT",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH terms AS (\n  SELECT lower(unaccent(t)) AS t\n  FROM jsonb_array_elements_text($1::jsonb) AS x(t)\n),\nscored AS (\n  SELECT\n    p.*,\n    (\n      SELECT COUNT(*)\n      FROM terms\n      WHERE\n        unaccent(lower(btrim(replace(coalesce(p.codigo,''), chr(160), ' ')))) =\n        unaccent(lower(btrim(replace(t,                chr(160), ' '))))\n        OR unaccent(lower(coalesce(p.marca,    ''))) LIKE '%' || t || '%'\n        OR unaccent(lower(coalesce(p.producto, ''))) LIKE '%' || t || '%'\n        OR EXISTS (\n          SELECT 1\n          FROM unnest(coalesce(p.categorias, ARRAY[]::text[])) c\n          WHERE unaccent(lower(c)) LIKE '%' || t || '%'\n        )\n    ) AS hits\n  FROM cosmy_products p\n  WHERE p.codigo <> 'INSTAGRAM_COD'\n)\nSELECT codigo, marca, producto, fecha_vencimiento, existencia, categorias\nFROM scored\nWHERE hits >= 1\nORDER BY hits DESC, producto;",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.output.next_step.terms) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -656,
+        464
+      ],
+      "id": "a9fa4b30-02f4-4aff-9e1d-278736533e11",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const CHUNK_SIZE = 50;\nconst FIXED_DELAY = 1.2;\n\nconst baseMessages = $('AI Agent5').first().json.output.messages || [];\n\nconst products = $input.all().map(i => i.json) || [];\nif (products.length === 0) {\n  return [{\n    json: {\n      output: {\n        messages: baseMessages,\n        total_messages: baseMessages.length\n      }\n    }\n  }];\n}\n\nconst chunks = [];\nfor (let i = 0; i < products.length; i += CHUNK_SIZE) {\n  const slice = products.slice(i, i + CHUNK_SIZE);\n  const blocks = slice.map(p => {\n    const nombre = (p.producto ?? '').toString().trim();\n    const marca  = (p.marca ?? '').toString().trim();\n    const codigo = (p.codigo ?? '').toString().trim();\n\n    const rawEx = (p.existencia ?? '').toString().trim();\n    let disponibilidadLine = '';\n    if (rawEx) {\n      const low = rawEx.toLowerCase();\n      if (low.startsWith('si')) {\n        disponibilidadLine = '   Disponibilidad: Disponible';\n      } else if (low.startsWith('no')) {\n        disponibilidadLine = '   Disponibilidad: No disponible';\n      } else {\n        const m = low.match(/^(\\d+)/);\n        if (m) disponibilidadLine = `   Disponibilidad: ${m[1]} unidades`;\n      }\n    }\n\n    const rawVto = (p.fecha_vencimiento ?? '').toString().trim();\n    let venceLine = '';\n    if (rawVto) {\n      const m = rawVto.match(/^(\\d{4})-(\\d{2})(?:-(\\d{2}))?$/); // YYYY-MM o YYYY-MM-DD\n      if (m) {\n        const year = m[1];\n        const month = m[2];\n        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];\n        const mi = parseInt(month, 10) - 1;\n        if (mi >= 0 && mi < 12) {\n          venceLine = `   Vence: ${meses[mi]} ${year}`;\n        } else {\n          venceLine = `   Vence: ${rawVto}`;\n        }\n      } else {\n        venceLine = `   Vence: ${rawVto}`;\n      }\n    }\n\n    // Línea principal del producto\n    let block = `• ${nombre}`;\n    if (marca)  block += ` — ${marca}`;\n    if (codigo) block += ` (código: ${codigo})`;\n    if (disponibilidadLine) block += `\\n${disponibilidadLine}`;\n    if (venceLine)          block += `\\n${venceLine}`;\n    return block;\n  });\n\n  chunks.push(blocks.join('\\n\\n'));\n}\n\nconst lastOrder = baseMessages.length ? (baseMessages[baseMessages.length - 1].order ?? baseMessages.length) : 0;\nconst listMessages = chunks.map((content, idx) => ({\n  order: lastOrder + idx + 1,\n  content,\n  delay: FIXED_DELAY,\n  tipo: 'texto'\n}));\n\nconst messages = [...baseMessages, ...listMessages];\n\nreturn [{\n  json: {\n    output: {\n      messages,\n      total_messages: messages.length\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        736
+      ],
+      "id": "03c857aa-667b-4859-94ee-24c28625ea71",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $json.key_batch }}",
+        "value": "={{ $json.value_batch }}",
+        "expire": true,
+        "ttl": "={{ $json.ttl }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        656
+      ],
+      "id": "4ddf604a-d027-4792-a12b-5b0e253b4b7f",
+      "name": "Redis3",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('datos').first().json.user.phone \nconst terms = $('AI Agent5').first().json.output?.next_step?.terms ?? [];\n\nconst products = $input.all().map(i => i.json) || [];\n\nconst batchId = 'b-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);\n\nconst items = products.map(p => ({\n  codigo:  (p.codigo  ?? '').toString(),\n  producto:(p.producto?? '').toString(),\n  marca:   (p.marca   ?? '').toString(),\n})).filter(p => p.codigo || p.producto || p.marca);\n\nconst payload = {\n  chat_id: chatId,\n  terms,\n  count: items.length,\n  createdAt: new Date().toISOString(),\n  items\n};\n\nconst TTL_SECONDS = 3600; \n\nreturn [{\n  json: {\n    key_batch: `cosmy:batch:${batchId}`,\n    value_batch: JSON.stringify(payload),\n    key_ptr: `cosmy:active_batch:${chatId}`,\n    value_ptr: batchId,\n    ttl: TTL_SECONDS\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        416
+      ],
+      "id": "e23e7043-0e13-4839-a15a-26a8e19ee2fd",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $('Code in JavaScript1').item.json.key_ptr }}",
+        "value": "={{ $('Code in JavaScript1').item.json.value_ptr }}",
+        "expire": true,
+        "ttl": "={{ $('Code in JavaScript1').item.json.ttl }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        16,
+        656
+      ],
+      "id": "836c2cb5-a8ab-45dc-afc4-06dee263565b",
+      "name": "Redis4",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "call this tool to check active products only when request prices or a formal quote",
+        "workflowId": {
+          "__rl": true,
+          "value": "ZcsPiwy4XWeQmn3b",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ZcsPiwy4XWeQmn3b",
+          "cachedResultName": "MATCH_ACTIVE_PRODUCTS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $('datos').first().json.user.phone }}",
+            "terms": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('terms', ``, 'string') }}",
+            "mode": "count"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "terms",
+              "displayName": "terms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -1664,
+        528
+      ],
+      "id": "895f7099-00b2-4f59-989f-48a524421b90",
+      "name": "ACTIVE_LIST_RESOLVE"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "ZcsPiwy4XWeQmn3b",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ZcsPiwy4XWeQmn3b",
+          "cachedResultName": "MATCH_ACTIVE_PRODUCTS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $('datos').item.json.user.phone }}",
+            "mode": "data",
+            "terms": "={{ $json.output.next_step.terms_json }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "terms",
+              "displayName": "terms",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "mode",
+              "displayName": "mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -1104,
+        880
+      ],
+      "id": "0715745d-5ede-4e51-a0c8-1e2c209303b8",
+      "name": "Call 'MATCH_ACTIVE_PRODUCTS'"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3100779b-8e39-4ebd-963c-287d0bd88940",
+              "leftValue": "={{ $json?.matched_status || '' }}",
+              "rightValue": "quota_limited",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -880,
+        880
+      ],
+      "id": "d59555b4-86c4-4c3e-8461-a8f764a9ea32",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM cosmy_products\nWHERE codigo IN (\n  SELECT jsonb_array_elements_text($1::jsonb)\n);",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.matched_items.map(i => String(i.codigo))) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -656,
+        928
+      ],
+      "id": "7dd24538-629f-44e9-a28c-30a1cbaad2b1",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "EB12EX1Oy6gGuwqm",
+          "name": "Cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const CHUNK_SIZE = 50;\nconst FIXED_DELAY = 1.2;\n\nconst baseMessages = $('AI Agent5').first().json.output.messages || [];\n\nconst products = $input.all().map(i => i.json) || [];\nif (products.length === 0) {\n  return [{\n    json: {\n      output: {\n        messages: baseMessages,\n        total_messages: baseMessages.length\n      }\n    }\n  }];\n}\n\nconst chunks = [];\nfor (let i = 0; i < products.length; i += CHUNK_SIZE) {\n  const slice = products.slice(i, i + CHUNK_SIZE);\n  const blocks = slice.map(p => {\n    const nombre = (p.producto ?? '').toString().trim();\n    const marca  = (p.marca ?? '').toString().trim();\n\n    // Disponibilidad (opcional)\n    const rawEx = (p.existencia ?? '').toString().trim();\n    let disponibilidadLine = '';\n    if (rawEx) {\n      const low = rawEx.toLowerCase();\n      if (low.startsWith('si')) {\n        disponibilidadLine = '   Disponibilidad: Disponible';\n      } else if (low.startsWith('no')) {\n        disponibilidadLine = '   Disponibilidad: No disponible';\n      } else {\n        const m = low.match(/^(\\d+)/);\n        if (m) disponibilidadLine = `   Disponibilidad: ${m[1]} unidades`;\n      }\n    }\n\n    // Vencimiento (opcional)\n    const rawVto = (p.fecha_vencimiento ?? '').toString().trim();\n    let venceLine = '';\n    if (rawVto) {\n      const m = rawVto.match(/^(\\d{4})-(\\d{2})(?:-(\\d{2}))?$/); // YYYY-MM o YYYY-MM-DD\n      if (m) {\n        const year = m[1];\n        const month = m[2];\n        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];\n        const mi = parseInt(month, 10) - 1;\n        venceLine = (mi >= 0 && mi < 12) ? `   Vence: ${meses[mi]} ${year}` : `   Vence: ${rawVto}`;\n      } else {\n        venceLine = `   Vence: ${rawVto}`;\n      }\n    }\n\n    // Precio (opcional)\n    const rawPrice = (p.precio ?? '').toString().trim();\n    let priceLine = '';\n    if (rawPrice) {\n      const num = Number(rawPrice.replace(',', '.'));\n      priceLine = isNaN(num) ? `   Precio: ${rawPrice}` : `   Precio: $${num.toFixed(2)}`;\n    }\n\n    // Línea principal del producto (sin código)\n    let block = `• ${nombre}`;\n    if (marca) block += ` — ${marca}`;\n    if (priceLine) block += `\\n${priceLine}`;\n    if (disponibilidadLine) block += `\\n${disponibilidadLine}`;\n    if (venceLine) block += `\\n${venceLine}`;\n    return block;\n  });\n\n  chunks.push(blocks.join('\\n\\n'));\n}\n\nconst lastOrder = baseMessages.length ? (baseMessages[baseMessages.length - 1].order ?? baseMessages.length) : 0;\nconst listMessages = chunks.map((content, idx) => ({\n  order: lastOrder + idx + 1,\n  content,\n  delay: FIXED_DELAY,\n  tipo: 'texto'\n}));\n\nconst messages = [...baseMessages, ...listMessages];\n\nreturn [{\n  json: {\n    output: {\n      messages,\n      total_messages: messages.length\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -432,
+        928
+      ],
+      "id": "7ec76705-6f02-46be-bbff-e50a371f6694",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE client_memory\nSET {{$json.setClause}}\nWHERE chat_id = ${{$json.params.length}}::text;",
+        "options": {
+          "queryReplacement": "={{$json.params}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -880,
+        288
+      ],
+      "id": "41be6e68-a32c-4bb9-9d10-d5ab696ce7b7",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ALLOWED = [\"nombre\",\"laboratorio\",\"estado\",\"ciudad\",\"rif\",\"nombre_presupuesto\"];\nconst upd = $input.first().json.output.next_step.updated_client ?? {};\nconst keys = ALLOWED.filter(k => Object.prototype.hasOwnProperty.call(upd, k));\n\nconst setClause = keys.map((k, i) => `${k}=$${i+1}::text`).join(\", \");\nconst params = keys.map(k => upd[k] != null ? String(upd[k]) : null);\n\nconst chatId = $('datos').first().json.user.phone;\nparams.push(chatId != null ? String(chatId) : \"\");\n\nreturn [{ setClause, params }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        288
+      ],
+      "id": "dcdd9f95-677d-4ed0-82fc-c88e9d2fb9cf",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $input.first().json.body.messages[0]\n\nif(message.hasOwnProperty('attachments')){\n  return {\n    json: {\n      file_type: $input.first().json.body.messages[0].attachments[0].file_type\n    }\n  };\n}\n\nreturn {\n  json: {\n    file_type: $input.first().json.body.messages[0].content_type\n  }\n}\n\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -5536,
+        784
+      ],
+      "id": "493ff506-4678-4cf6-99e3-7f03ed919801",
+      "name": "Tipo de dato"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "daniela",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -5760,
+        784
+      ],
+      "id": "96843a36-a02f-437c-9d1f-45a9a77f34ff",
+      "name": "Webhook",
+      "webhookId": "167386f8-1ae8-4ed4-b7da-8d93da006c39"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"total_messages\": {\n      \"type\": \"integer\",\n      \"description\": \"Número total de mensajes a enviar\",\n      \"minimum\": 1,\n      \"maximum\": 4\n    },\n    \"requiere_redireccion\": {\n      \"type\": \"boolean\",\n      \"description\": \"Indique si se requiere transferencia a otro departamento\"\n    },\n    \"departamento_destino\": {\n      \"type\": [\"string\", \"null\"],\n      \"enum\": [\"ventas\", \"asesoria_cientifica\", \"servicio_tecnico\", \"finanzas\", null],\n      \"description\": \"Departamento al que redirigir (null si no hay redirección)\"\n    },\n    \"next_step\": {\n      \"type\": [\"object\", \"null\"],\n      \"additionalProperties\": true,\n      \"description\": \"Acciones que se pueden activar según la intención del cliente\",\n      \"properties\": {\n        \"action\": {\n          \"type\": [\"string\", \"null\"],\n          \"enum\": [\"register_new_client\", \"send_catalog\", \"search_products\", \"request_prices\", \"update_cliente_data\", \"collect_quote_info\", null],\n          \"description\": \"actions to be executed according to the user's intention\"\n        }\n      }\n    },\n    \"messages\": {\n      \"type\": \"array\",\n      \"description\": \"Array de mensajes estructurados\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"order\": {\n            \"type\": \"integer\",\n            \"description\": \"Orden de los mensajes (1, 2, 3, 4)\"\n          },\n          \"content\": {\n            \"type\": \"string\",\n            \"description\": \"Contenido del mensaje (para texto) o título del archivo (para archivo)\"\n          },\n          \"delay\": {\n            \"type\": \"number\",\n            \"description\": \"Delay en segundos antes del envío (0 - 3s)\",\n            \"minimum\": 0,\n            \"maximum\": 3\n          },\n          \"tipo\": {\n            \"type\": \"string\",\n            \"enum\": [\"texto\", \"archivo\"],\n            \"description\": \"Tipo de mensaje a enviar\",\n            \"default\": \"texto\"\n          },\n          \"file_key\": {\n            \"type\": \"string\",\n            \"enum\": [\"CATALOGO_PRODUCTOS\"],\n            \"description\": \"Clave técnica para identificar el archivo (solo cuando tipo=archivo)\"\n          }\n        },\n        \"required\": [\"order\", \"content\", \"delay\", \"tipo\"]\n      },\n      \"minItems\": 1,\n      \"maxItems\": 4\n    }\n  },\n  \"required\": [\"total_messages\", \"requiere_redireccion\", \"departamento_destino\", \"messages\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1536,
+        528
+      ],
+      "id": "b4f18679-2d96-4649-bd2a-7ef6c719f1a9",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        688,
+        224
+      ],
+      "id": "655dfd52-1592-4cdb-93a3-4ae2719fcfa2",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {},\n  binary: $('catalogo').first().binary\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        608
+      ],
+      "id": "2eb9b049-39e9-4f06-983d-90457f9cbb0d",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1VQ4H00MetxHM-3D8UaRg_HCJ6st8nuTp",
+          "mode": "list",
+          "cachedResultName": "Catálogo COSMY, C.A-1.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1VQ4H00MetxHM-3D8UaRg_HCJ6st8nuTp/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -880,
+        656
+      ],
+      "id": "23b6d942-ef2e-4917-9135-76d4bcb5af23",
+      "name": "catalogo",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WzDwpsq7dPrcqnCU",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://chatwoot-low4kks04cg8wg84kso808o8.devcloudplanet.com/api/v1/accounts/1/conversations/{{ $('datos').first().json.message.chat_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"{{ $json.content.replace(/\\\\/g, '\\\\\\\\')  // Escapar backslashes\n    .replace(/\"/g, '\\\\\"')    // Escapar comillas dobles\n    .replace(/\\n/g, '\\\\n')   // Escapar saltos de línea\n    .replace(/\\r/g, '\\\\r')   // Escapar retornos de carro\n    .replace(/\\t/g, '\\\\t') }}\",\n  \"message_type\": \"outgoing\",\n  \"private\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        688,
+        416
+      ],
+      "id": "15b553b4-bc9b-41a9-9c57-b36d21cfbaa5",
+      "name": "Enviar mensaje",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "3eZWAT8GPAs1BrNv",
+          "name": "chatwoot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        240,
+        128
+      ],
+      "id": "4c9758b5-5072-4234-a689-f66d96445575",
+      "name": "unificar"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8ndev.devcloudplanet.com",
+            "user-agent": "rest-client/2.1.0 (linux-musl x86_64) ruby/3.4.4p34",
+            "content-length": "1885",
+            "accept": "application/json",
+            "accept-encoding": "gzip;q=1.0,deflate;q=0.6,identity;q=0.3",
+            "content-type": "application/json",
+            "x-forwarded-for": "10.0.6.1",
+            "x-forwarded-host": "n8ndev.devcloudplanet.com",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "6b402f81bc61",
+            "x-real-ip": "10.0.6.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "additional_attributes": {},
+            "can_reply": true,
+            "channel": "Channel::Api",
+            "contact_inbox": {
+              "id": 396,
+              "contact_id": 130,
+              "inbox_id": 22,
+              "source_id": "cb561a02-fd6e-4584-ac66-0cdea64aec96",
+              "created_at": "2025-10-27T01:45:24.594Z",
+              "updated_at": "2025-10-27T01:45:24.594Z",
+              "hmac_verified": false,
+              "pubsub_token": "XntvsZLGLVwbEJCmrtvvG5ez"
+            },
+            "id": 323,
+            "inbox_id": 22,
+            "messages": [
+              {
+                "id": 8629,
+                "content": "que servicio tienen",
+                "account_id": 1,
+                "inbox_id": 22,
+                "conversation_id": 323,
+                "message_type": 0,
+                "created_at": 1762139568,
+                "updated_at": "2025-11-03T03:12:48.237Z",
+                "private": false,
+                "status": "sent",
+                "source_id": "WAID:3FEB2BBB80B3D893B970",
+                "content_type": "text",
+                "content_attributes": {},
+                "sender_type": "Contact",
+                "sender_id": 130,
+                "external_source_ids": {},
+                "additional_attributes": {},
+                "processed_message_content": "que servicio tienen",
+                "sentiment": {},
+                "conversation": {
+                  "assignee_id": null,
+                  "unread_count": 1,
+                  "last_activity_at": 1762139568,
+                  "contact_inbox": {
+                    "source_id": "cb561a02-fd6e-4584-ac66-0cdea64aec96"
+                  }
+                },
+                "sender": {
+                  "additional_attributes": {},
+                  "custom_attributes": {},
+                  "email": null,
+                  "id": 130,
+                  "identifier": "584146378140@s.whatsapp.net",
+                  "name": "Ing. Eleudo Fuenmayor",
+                  "phone_number": "+584146378140",
+                  "thumbnail": "",
+                  "blocked": false,
+                  "type": "contact"
+                }
+              }
+            ],
+            "labels": [],
+            "meta": {
+              "sender": {
+                "additional_attributes": {},
+                "custom_attributes": {},
+                "email": null,
+                "id": 130,
+                "identifier": "584146378140@s.whatsapp.net",
+                "name": "Ing. Eleudo Fuenmayor",
+                "phone_number": "+584146378140",
+                "thumbnail": "",
+                "blocked": false,
+                "type": "contact"
+              },
+              "assignee": null,
+              "team": null,
+              "hmac_verified": false
+            },
+            "status": "open",
+            "custom_attributes": {},
+            "snoozed_until": null,
+            "unread_count": 1,
+            "first_reply_created_at": "2025-10-27T02:11:47.989Z",
+            "priority": null,
+            "waiting_since": 1762139568,
+            "agent_last_seen_at": 1762139541,
+            "contact_last_seen_at": 0,
+            "last_activity_at": 1762139568,
+            "timestamp": 1762139568,
+            "created_at": 1761529524,
+            "updated_at": 1762139568.316284,
+            "event": "automation_event.message_created"
+          },
+          "webhookUrl": "https://n8ndev.devcloudplanet.com/webhook/daniela",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields8": {
+      "main": [
+        [
+          {
+            "node": "datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields9": {
+      "main": [
+        [
+          {
+            "node": "datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Redis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis1": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redis2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Redis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis2": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "unificar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch2": {
+      "main": [
+        [
+          {
+            "node": "Enviar mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar catálogo": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        []
+      ]
+    },
+    "datos": {
+      "main": [
+        [
+          {
+            "node": "Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent5": {
+      "main": [
+        [
+          {
+            "node": "Switch3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK_CLIENT": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch3": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Call 'MATCH_ACTIVE_PRODUCTS'",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "catalogo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert or update rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK_PRODUCT": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis3": {
+      "main": [
+        [
+          {
+            "node": "Redis4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Redis3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ACTIVE_LIST_RESOLVE": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'MATCH_ACTIVE_PRODUCTS'": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de dato": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Tipo de dato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent5",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Enviar catálogo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "catalogo": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar mensaje": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "unificar": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5216e429-df4f-46e7-9655-1b4b1f6e5efb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4b12968c2763defbf07a4675787dc1363d47ccb07d9d8a590c0f00dfb98dbc0d"
+  },
+  "id": "1tGPpIzwUiqHqQFw",
+  "tags": []
+}

@@ -1,0 +1,908 @@
+{
+  "name": "MATCH_ACTIVE_PRODUCTS",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "chat_id"
+            },
+            {
+              "name": "terms"
+            },
+            {
+              "name": "mode"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1488,
+        -32
+      ],
+      "id": "0f0cca43-de7b-40dc-b0f2-229d1f5603e5",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "=activeBatch",
+        "key": "=cosmy:active_batch:{{ $json.chat_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        -32
+      ],
+      "id": "516c1b3b-a3de-431e-a8be-5c34c8808b9a",
+      "name": "Redis",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "=productInfo",
+        "key": "=cosmy:batch:{{ $json.activeBatch }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        -32
+      ],
+      "id": "4651a76d-2245-4f22-ae7f-bce0f0cc3483",
+      "name": "Redis1",
+      "credentials": {
+        "redis": {
+          "id": "V6QiSHtc4dUnink5",
+          "name": "Redis cosmy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Phrase-first matching (no token split). Keeps selection logic, OR across phrases, union and dedupe.\n\nconst unaccent = (s = \"\") =>\n  s.normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g, \"\").toLowerCase().trim();\n\n// Normalize to a comparable key: remove accents, lowercase, collapse non-alphanum to single spaces.\nconst toKey = (s = \"\") =>\n  unaccent(String(s))\n    .replace(/\\bpor\\b/g, \" \")\n    .replace(/[^a-z0-9]+/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n\nconst safeJsonParse = (s) => { try { return JSON.parse(s); } catch { return null; } };\n\nconst normalizeTermsInput = (raw) => {\n  if (typeof raw !== \"string\") return [];\n  const t = raw.trim();\n  if (t.startsWith(\"[\") && t.endsWith(\"]\")) {\n    const arr = safeJsonParse(t);\n    if (Array.isArray(arr)) {\n      return arr.map(x => (typeof x === \"string\" ? x : String(x ?? \"\")).trim()).filter(Boolean);\n    }\n  }\n  if (t.includes(\"|||\")) return t.split(\"|||\").map(x => x.trim()).filter(Boolean);\n  if (t.includes(\"|\"))   return t.split(\"|\").map(x => x.trim()).filter(Boolean);\n  return [t];\n};\n\nconst wfInput  = $('When Executed by Another Workflow').first().json || {};\nconst mode     = String(wfInput.mode || \"count\").toLowerCase();\nconst rawTerms = String(wfInput.terms || \"[]\");\n\nconst rawTokens = normalizeTermsInput(rawTerms);\n\n// Detect selection (__SEL=) case-insensitive; all other entries are full phrases\nlet selection = null;\nconst phrasesRaw = [];\nfor (const tokRaw of rawTokens) {\n  const tok = String(tokRaw).trim();\n  if (tok.slice(0, 6).toUpperCase() === \"__SEL=\") {\n    const val = tok.slice(6).trim().toLowerCase();\n    if (!selection && val) selection = val;\n  } else {\n    phrasesRaw.push(tok);\n  }\n}\n\n// One key per phrase (do not split)\nconst termKeys = phrasesRaw.map(toKey).filter(Boolean);\n\nlet activeList = [];\nconst redisStr = $input.first().json.productInfo;\nif (typeof redisStr === \"string\" && redisStr.trim().length > 0) {\n  const parsed = safeJsonParse(redisStr);\n  if (parsed && Array.isArray(parsed.items)) activeList = parsed.items.slice();\n}\n\nif (activeList.length === 0) {\n  return [{ json: { matched_count: 0 } }];\n}\n\n// Selection by position\nconst applySelection = (arr, sel) => {\n  if (!sel) return arr;\n  const n = arr.length;\n  const parseInts = (s) => s.split(\",\").map(x => parseInt(x.trim(), 10)).filter(Number.isInteger);\n  if (sel === \"all\") return arr;\n  if (sel.startsWith(\"head:\")) {\n    const k = parseInt(sel.split(\":\")[1] || \"0\", 10);\n    return (Number.isInteger(k) && k > 0) ? arr.slice(0, Math.min(k, n)) : arr;\n  }\n  if (sel.startsWith(\"tail:\")) {\n    const k = parseInt(sel.split(\":\")[1] || \"0\", 10);\n    return (Number.isInteger(k) && k > 0) ? arr.slice(Math.max(0, n - k)) : arr;\n  }\n  if (sel.startsWith(\"range:\")) {\n    const seg = (sel.split(\":\")[1] || \"\");\n    const [aStr, bStr] = seg.split(\"-\").map(s => s.trim());\n    const a = parseInt(aStr, 10), b = parseInt(bStr, 10);\n    return (Number.isInteger(a) && Number.isInteger(b) && a >= 1 && b >= a)\n      ? arr.slice(a - 1, Math.min(b, n))\n      : arr;\n  }\n  if (sel.startsWith(\"pick:\")) {\n    const idxs = parseInts(sel.split(\":\")[1] || \"\");\n    const set  = new Set(idxs.map(i => i - 1).filter(i0 => i0 >= 0 && i0 < n));\n    return Array.from(set).map(i0 => arr[i0]);\n  }\n  return arr;\n};\n\nconst selectedList = applySelection(activeList, selection);\n\n// Build normalized haystack (single key per product)\nconst indexed = activeList.map(p => {\n  const parts = [];\n  if (p.codigo != null) parts.push(String(p.codigo));\n  if (p.marca)          parts.push(String(p.marca));\n  if (p.producto)       parts.push(String(p.producto));\n  if (Array.isArray(p.categorias)) parts.push(...p.categorias.map(String));\n  const key = toKey(parts.join(\" \"));\n  const codeKey = toKey(String(p.codigo ?? \"\"));\n  return { p, key, codeKey };\n});\n\n// OR across full phrases (no token split)\nconst textMatches = [];\nif (termKeys.length > 0) {\n  for (const it of indexed) {\n    const ok = termKeys.some(tk => {\n      if (!tk) return false;\n      if (it.codeKey && it.codeKey.includes(tk)) return true; // code match\n      return it.key.includes(tk); // phrase match\n    });\n    if (ok) textMatches.push(it.p);\n  }\n}\n\n// Union and dedupe\nlet union = [];\nif (selection)         union = union.concat(selectedList);\nif (termKeys.length>0) union = union.concat(textMatches);\nif (!selection && termKeys.length === 0) union = activeList.slice();\n\nconst seen = new Set();\nconst matches = [];\nfor (const p of union) {\n  const key = p && p.codigo != null ? `code:${String(p.codigo)}` : `obj:${JSON.stringify(p)}`;\n  if (!seen.has(key)) { seen.add(key); matches.push(p); }\n}\n\nconst matched_count = matches.length;\n\nif (mode === \"data\") {\n  const compact = matches.map(p => {\n    const out = {};\n    if (p.codigo)   out.codigo   = String(p.codigo);\n    if (p.marca)    out.marca    = String(p.marca);\n    if (p.producto) out.producto = String(p.producto);\n    if (Array.isArray(p.categorias) && p.categorias.length > 0) out.categorias = p.categorias;\n    return out;\n  });\n  return [{ json: { matched_count, matched_items: compact } }];\n}\n\nreturn [{ json: { matched_count } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        -32
+      ],
+      "id": "5966e84e-f28c-4c51-956e-dcb57e599bf3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT count(*)\nFROM price_request\nWHERE chat_id = '{{ $('When Executed by Another Workflow').first().json.chat_id }}'\n  AND requested_at >= '{{ $now.startOf(\"day\").toFormat(\"yyyy-LL-dd HH:mm:ss\") }}'\n  AND requested_at <= '{{ $now.endOf(\"day\").toFormat(\"yyyy-LL-dd HH:mm:ss\") }}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "750e3b59-d973-4015-98cb-09707753d453",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "31622736-76ae-472d-b732-158e3bbd6d4d",
+              "leftValue": "={{ $json.matched_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -592,
+        -32
+      ],
+      "id": "96c9bf46-0671-43d7-929a-ac49dbdfda21",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ \n  $('data').first().json.matched_count + parseInt($json.count) > 3 &&\n  $('When Executed by Another Workflow').first().json.mode == 'count'\n}}",
+                    "rightValue": 3,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "59c9cc10-914d-4c5f-8a60-ef620c3a25c8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mode count"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "355c9e3e-ab27-41a7-b911-b6485d67f24d",
+                    "leftValue": "={{ \n  $('data').first().json.matched_count + parseInt($json.count) > 3 &&\n  $('When Executed by Another Workflow').first().json.mode !== 'count'\n}}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mode Data"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "48b8aa63-3b4a-4bf0-b07e-848dd6a9f097",
+                    "leftValue": "={{ \n  $('data').item.json.matched_count + parseInt($json.count) <= 3 &&\n  $('When Executed by Another Workflow').item.json.mode == 'count'\n}}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1328,
+        -16
+      ],
+      "id": "2e3f26fb-0c69-47d0-8a5a-a309cce9ee0d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f7578aa3-fb0b-4902-b041-62973e5a77df",
+              "name": "matched_count",
+              "value": "={{ $('Code in JavaScript').first().json.matched_count }}",
+              "type": "string"
+            },
+            {
+              "id": "c93ec644-c121-4c78-9532-47f007eba524",
+              "name": "matched_status",
+              "value": "quota_limited",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3904,
+        -688
+      ],
+      "id": "0fef619a-ae89-4a6c-a3ad-d2fb2742bdf9",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const count = parseInt($input.first().json.count) || 0;\nconst diffCount = Math.max(0, 3 - count);\n\nconst matched_items =\n  ($('data').first().json.matched_items || []).filter(Boolean);\n\nconst products = matched_items.slice(0, diffCount);\n\nreturn [{\n  json: {\n    diffCount,\n    products\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2560,
+        16
+      ],
+      "id": "cc2dfd82-1799-45b4-9e87-42c25c569c24",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "750561b8-567d-4f2f-817a-5883748b450a",
+              "leftValue": "={{ $json.diffCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2848,
+        32
+      ],
+      "id": "c2172e3f-d340-4159-9696-36a0af6cf08a",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "products",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3056,
+        -64
+      ],
+      "id": "694593f4-11c2-4178-8bc9-425492abf5d9",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "price_request",
+          "mode": "list",
+          "cachedResultName": "price_request"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $('When Executed by Another Workflow').first().json.chat_id }}",
+            "product_code": "={{ $json.codigo }}",
+            "requested_at": "={{ $now.toLocal() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_code",
+              "displayName": "product_code",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "requested_at",
+              "displayName": "requested_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3264,
+        -64
+      ],
+      "id": "5e815619-ca80-44cd-b92c-8c2707b419d4",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        3472,
+        -64
+      ],
+      "id": "f482f68c-8ecc-4f10-acea-e0efe8b748f8",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "mached_items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        320
+      ],
+      "id": "a8677e3f-3ffe-4ac6-b72a-409fd0a84c7a",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "price_request",
+          "mode": "list",
+          "cachedResultName": "price_request"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $('When Executed by Another Workflow').first().json.chat_id }}",
+            "product_code": "={{ $json.codigo }}",
+            "requested_at": "={{ $now.toLocal() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "product_code",
+              "displayName": "product_code",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "requested_at",
+              "displayName": "requested_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2224,
+        320
+      ],
+      "id": "b062f9e7-091f-4368-a670-f7921598ee53",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1ca25452-9cff-44d0-9232-67c82dcdd8e0",
+              "name": "matched_count",
+              "value": "={{ $('data').item.json.matched_count }}",
+              "type": "number"
+            },
+            {
+              "id": "d3a66a0b-d9dc-44e3-b21e-ce8cd5d0c4b0",
+              "name": "matched_items",
+              "value": "={{ $('data').item.json.matched_items }}",
+              "type": "array"
+            },
+            {
+              "id": "ce604f77-51d3-49d4-8d87-5efcba94bfee",
+              "name": "matched_status",
+              "value": "=price_success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2576,
+        320
+      ],
+      "id": "0a06e6d6-049e-4c46-8c66-3815c6588f80",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        320
+      ],
+      "id": "34017325-4582-444c-a107-fc0bfb7d855c",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM (\n  WITH terms AS (\n    SELECT\n      regexp_replace(\n        unaccent(lower(\n          regexp_replace(value::text, '[µμ]\\\\s*g', 'mcg', 'gi')\n        )),\n        '[^a-z0-9]+',' ','g'\n      )::text AS tkey\n    FROM jsonb_array_elements_text($1::jsonb)\n  ),\n  prod AS (\n    SELECT\n      p.*,\n      regexp_replace(\n        unaccent(lower(\n          regexp_replace(\n            coalesce(p.codigo::text,'') || ' ' ||\n            coalesce(p.marca,'')        || ' ' ||\n            coalesce(p.producto,'')     || ' ' ||\n            coalesce(array_to_string(p.categorias,' '),''),\n            '[µμ]\\\\s*g', 'mcg', 'gi'\n          )\n        )),\n        '[^a-z0-9]+',' ','g'\n      )::text AS norm_key,\n      regexp_replace(\n        unaccent(lower(\n          regexp_replace(coalesce(p.codigo::text,''), '[µμ]\\\\s*g', 'mcg', 'gi')\n        )),\n        '[^a-z0-9]+',' ','g'\n      )::text AS code_key\n    FROM cosmy_products p\n  )\n  SELECT codigo, marca, producto, fecha_vencimiento, existencia, precio\n  FROM prod p\n  WHERE EXISTS (\n    SELECT 1\n    FROM terms t\n    WHERE\n      (p.code_key <> '' AND p.code_key LIKE '%' || t.tkey || '%')\n      OR\n      (p.norm_key LIKE '%' || t.tkey || '%')\n  )\n) s;",
+        "options": {
+          "queryReplacement": "={{ $('When Executed by Another Workflow').item.json.terms }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        -336
+      ],
+      "id": "58ea564d-3e91-4b0c-b19c-454857351b37",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const matched_items = $input.all();\nconst matched_count = matched_items.length\nconst mode = $('When Executed by Another Workflow').first().json.mode\n\nconst json = {\n    matched_count,\n    \n}\nif (mode == \"data\") {\n  json.matched_items = matched_items.map(item => item.json);\n}\n\n\nreturn [{ json }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -336
+      ],
+      "id": "a142c809-5543-4bcf-b137-c0c90fc01474",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "jsCode": "let out;\n\ntry {\n  out = $('Code in JavaScript3').all();\n} catch (e) {\n  if (String(e?.message || e).includes(\"hasn't been executed\")) {\n    out = $('Code in JavaScript').all();\n  } else {\n    throw e; \n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        32
+      ],
+      "id": "ecc113ea-3ee9-4813-a19e-4d9abbeb04f8",
+      "name": "data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5bea2d5-e0bf-425c-bd78-34aa61f43595",
+              "name": "mached_items",
+              "value": "={{ $('data').first().json.matched_items }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1840,
+        320
+      ],
+      "id": "3397bf74-89f6-42eb-a1a8-36c8a3722cff",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "88daf187-76c5-40e7-9ce5-c806b6f33e5f",
+              "name": "matched_count",
+              "value": "={{ $('data').item.json.matched_count }}",
+              "type": "number"
+            },
+            {
+              "id": "2b5797ca-efab-4aaa-890e-a35edae2160b",
+              "name": "matched_status",
+              "value": "price_success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1840,
+        128
+      ],
+      "id": "df9d1e0d-c8f4-4e60-90d1-4fe57bce41c6",
+      "name": "Edit Fields3"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "chat_id": "584246668289",
+          "terms": "[\"tobramicina 10 mcg\"]",
+          "mode": "data"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis": {
+      "main": [
+        [
+          {
+            "node": "Redis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "data": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a7718cbf-3d86-4263-a51a-ea9edb8cf877",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4b12968c2763defbf07a4675787dc1363d47ccb07d9d8a590c0f00dfb98dbc0d"
+  },
+  "id": "ZcsPiwy4XWeQmn3b",
+  "tags": []
+}
