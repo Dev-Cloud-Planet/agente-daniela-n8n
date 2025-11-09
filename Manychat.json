@@ -1,0 +1,160 @@
+{
+  "name": "Manychat Cosmy",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "INTEGRACION",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        80,
+        32
+      ],
+      "id": "e8584280-191a-4253-841a-9fea42360117",
+      "name": "Entrada",
+      "webhookId": "24bc0da6-9cdf-4a95-bca7-dac7bf087089"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        848,
+        32
+      ],
+      "id": "8a91f4dc-c103-46c0-879c-862bbdf9064b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  respuesta AS output\nFROM\n  manychat_cache\nWHERE\n  id_usuario = '{{ $json.body.data.ig_id }}'\nORDER BY\n  time DESC\nLIMIT 1;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        464,
+        32
+      ],
+      "id": "016e4675-c26c-41bc-8ac7-0ac8ee81e315",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "e6quJ2AJC7ic0Vmf",
+          "name": "Daniela"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Entrada": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8ndev.devcloudplanet.com",
+            "user-agent": "ManyChat",
+            "content-length": "1014",
+            "content-type": "application/json; charset=utf-8",
+            "x-forwarded-for": "3.74.158.122",
+            "x-forwarded-host": "n8ndev.devcloudplanet.com",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "6b402f81bc61",
+            "x-real-ip": "3.74.158.122",
+            "accept-encoding": "gzip"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "data": {
+              "key": "user:1298847735",
+              "id": "1298847735",
+              "page_id": "",
+              "user_refs": [],
+              "status": "active",
+              "first_name": "Eleudo",
+              "last_name": "Jose Fuenmayor Vasquez",
+              "name": "Eleudo Jose Fuenmayor Vasquez",
+              "gender": null,
+              "profile_pic": "https://app.manychat.com/ava/3458078/1298847735/cb4e17aeb09db23d44cc27e02584ae77",
+              "locale": null,
+              "language": null,
+              "timezone": "UTC±00",
+              "live_chat_url": "https://app.manychat.com/fb3458078/chat/1298847735",
+              "last_input_text": "UBICACION",
+              "optin_phone": false,
+              "phone": null,
+              "optin_email": false,
+              "email": null,
+              "subscribed": "2025-09-13T00:14:06-04:00",
+              "last_interaction": null,
+              "ig_last_interaction": "2025-09-17T00:02:11-04:00",
+              "last_seen": null,
+              "ig_last_seen": "2025-09-23T23:58:42-04:00",
+              "is_followup_enabled": true,
+              "ig_username": "eleudofuva",
+              "ig_id": 1479308576413553,
+              "whatsapp_phone": null,
+              "optin_whatsapp": false,
+              "phone_country_code": null,
+              "last_growth_tool": {
+                "id": 44286110,
+                "key": "widget:44286110",
+                "name": "COMETARIOS",
+                "type": "feed_comment_trigger",
+                "channel": "instagram"
+              },
+              "custom_fields": {
+                "Text": null
+              }
+            }
+          },
+          "webhookUrl": "https://n8ndev.devcloudplanet.com/webhook/many",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Entrada": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f771a129-22b8-440a-9c62-bcfee429b3c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4b12968c2763defbf07a4675787dc1363d47ccb07d9d8a590c0f00dfb98dbc0d"
+  },
+  "id": "AgtMkLrYu2EtdBXE",
+  "tags": []
+}
